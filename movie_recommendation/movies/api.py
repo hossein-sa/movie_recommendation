@@ -74,8 +74,34 @@ def delete_genre(request, genre_id: int):
 
 # Movie CRUD operations (Authentication required)
 @api.get("/movies/", response=list[MovieSchema], auth=JWTAuth())
-def list_movies(request):
-    return Movie.objects.all()
+def list_movies(request, title: str = None, genre_id: int = None, min_rating: float = None, max_rating: float = None,
+                start_date: str = None, end_date: str = None, limit: int = 10, offset: int = 0):
+    movies = Movie.objects.all()
+
+    # Search by title
+    if title:
+        movies = movies.filter(title__icontains=title)
+
+    # Filter by genre
+    if genre_id:
+        movies = movies.filter(genre_id=genre_id)
+
+    # Filter by rating range
+    if min_rating is not None:
+        movies = movies.filter(rating__gte=min_rating)
+    if max_rating is not None:
+        movies = movies.filter(rating__lte=max_rating)
+
+    # Filter by release date range
+    if start_date:
+        movies = movies.filter(release_date__gte=start_date)
+    if end_date:
+        movies = movies.filter(release_date__lte=end_date)
+
+    # Apply pagination
+    movies = movies[offset:offset + limit]
+
+    return movies
 
 
 @api.get("/movies/{movie_id}/", response=MovieSchema, auth=JWTAuth())
