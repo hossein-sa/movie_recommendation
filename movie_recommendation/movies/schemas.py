@@ -8,6 +8,10 @@ class GenreSchema(Schema):
     name: str
 
 
+class GenreCreateSchema(Schema):
+    name: str
+
+
 class MovieSchema(Schema):
     id: int
     title: str
@@ -16,3 +20,19 @@ class MovieSchema(Schema):
     release_date: date
     rating: float
     created_at: date
+
+
+class MovieCreateSchema(Schema):
+    title: str
+    description: str
+    genre_id: int  # Reference to the genre
+    release_date: date
+    rating: float
+
+
+class MovieUpdateSchema(Schema):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    genre_id: Optional[int] = None
+    release_date: Optional[date] = None
+    rating: Optional[float] = None

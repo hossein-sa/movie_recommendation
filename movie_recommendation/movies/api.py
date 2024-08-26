@@ -1,16 +1,40 @@
 from ninja import NinjaAPI
 from .models import Genre, Movie
-from .schema import GenreSchema, MovieSchema
+from .schemas import GenreSchema, GenreCreateSchema, MovieSchema, MovieCreateSchema, MovieUpdateSchema
 from django.shortcuts import get_object_or_404
+from ninja.errors import HttpError
 
 api = NinjaAPI()
 
 
+# Genre CRUD operations
 @api.get("/genres/", response=list[GenreSchema])
 def list_genres(request):
     return Genre.objects.all()
 
 
+@api.post("/genres/", response=GenreSchema)
+def create_genre(request, payload: GenreCreateSchema):
+    genre = Genre.objects.create(**payload.dict())
+    return genre
+
+
+@api.put("/genres/{genre_id}/", response=GenreSchema)
+def update_genre(request, genre_id: int, payload: GenreCreateSchema):
+    genre = get_object_or_404(Genre, id=genre_id)
+    genre.name = payload.name
+    genre.save()
+    return genre
+
+
+@api.delete("/genres/{genre_id}/")
+def delete_genre(request, genre_id: int):
+    genre = get_object_or_404(Genre, id=genre_id)
+    genre.delete()
+    return {"success": True}
+
+
+# Movie CRUD operations
 @api.get("/movies/", response=list[MovieSchema])
 def list_movies(request):
     return Movie.objects.all()
@@ -20,3 +44,42 @@ def list_movies(request):
 def get_movie(request, movie_id: int):
     movie = get_object_or_404(Movie, id=movie_id)
     return movie
+
+
+@api.post("/movies/", response=MovieSchema)
+def create_movie(request, payload: MovieCreateSchema):
+    genre = get_object_or_404(Genre, id=payload.genre_id)
+    movie = Movie.objects.create(
+        title=payload.title,
+        description=payload.description,
+        genre=genre,
+        release_date=payload.release_date,
+        rating=payload.rating,
+    )
+    return movie
+
+
+@api.put("/movies/{movie_id}/", response=MovieSchema)
+def update_movie(request, movie_id: int, payload: MovieUpdateSchema):
+    movie = get_object_or_404(Movie, id=movie_id)
+
+    if payload.title:
+        movie.title = payload.title
+    if payload.description:
+        movie.description = payload.description
+    if payload.genre_id:
+        movie.genre = get_object_or_404(Genre, id=payload.genre_id)
+    if payload.release_date:
+        movie.release_date = payload.release_date
+    if payload.rating:
+        movie.rating = payload.rating
+
+    movie.save()
+    return movie
+
+
+@api.delete("/movies/{movie_id}/")
+def delete_movie(request, movie_id: int):
+    movie = get_object_or_404(Movie, id=movie_id)
+    movie.delete()
+    return {"success": True}
