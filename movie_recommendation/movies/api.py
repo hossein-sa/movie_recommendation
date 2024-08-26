@@ -76,7 +76,8 @@ def delete_genre(request, genre_id: int):
 # Movie CRUD operations (Authentication required)
 @api.get("/movies/", response=list[MovieSchema], auth=JWTAuth())
 def list_movies(request, title: str = None, genre_id: int = None, min_rating: float = None, max_rating: float = None,
-                start_date: str = None, end_date: str = None, limit: int = 10, offset: int = 0):
+                start_date: str = None, end_date: str = None, sort_by: str = "title", order: str = "asc",
+                limit: int = 10, offset: int = 0):
     movies = Movie.objects.all()
 
     # Search by title
@@ -99,10 +100,25 @@ def list_movies(request, title: str = None, genre_id: int = None, min_rating: fl
     if end_date:
         movies = movies.filter(release_date__lte=end_date)
 
+    # Sorting
+    sorting_options = {
+        "title": "title",
+        "release_date": "release_date",
+        "rating": "rating"
+    }
+
+    # Determine sort order
+    if sort_by in sorting_options:
+        sort_field = sorting_options[sort_by]
+        if order == "desc":
+            sort_field = f"-{sort_field}"  # Prefix with "-" for descending order
+        movies = movies.order_by(sort_field)
+
     # Apply pagination
     movies = movies[offset:offset + limit]
 
     return movies
+
 
 
 @api.get("/movies/{movie_id}/", response=MovieSchema, auth=JWTAuth())
