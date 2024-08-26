@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from ninja.errors import HttpError
 from ninja_jwt.tokens import RefreshToken
 from ninja_jwt.authentication import JWTAuth
+from django.db.models import Q
 
 api = NinjaAPI()
 
@@ -189,3 +190,21 @@ def remove_from_watchlist(request, movie_id: int):
     watchlist_item = get_object_or_404(Watchlist, user=request.user, movie=movie)
     watchlist_item.delete()
     return {"success": True}
+
+
+@api.get("/recommendations/", response=list[MovieSchema], auth=JWTAuth())
+def get_recommendations(request):
+    user = request.user
+
+    # Get the user's favorite genres
+    favorite_genres = user.userprofile.favorite_genres.all()
+
+    # Get the movies in the user's watchlist
+    watchlist_movies = Watchlist.objects.filter(user=user).values_list('movie_id', flat=True)
+
+    # Recommend movies that are not in the user's watchlist but match the user's favorite genres
+    recommended_movies = Movie.objects.filter(
+        Q(genre__in=favorite_genres) & ~Q(id__in=watchlist_movies)
+    ).distinct()[:10]  # Limit to 10 recommendations
+
+    return recommended_movies
