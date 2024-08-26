@@ -14,7 +14,7 @@ class Movie(models.Model):
     description = models.TextField()
     genre = models.ForeignKey(Genre, related_name='movies', on_delete=models.CASCADE)
     release_date = models.DateField()
-    rating = models.DecimalField(max_length=3, decimal_places=1)
+    rating = models.DecimalField(max_digits=3, decimal_places=1)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

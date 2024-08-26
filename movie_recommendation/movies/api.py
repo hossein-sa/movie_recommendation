@@ -7,11 +7,12 @@ from .schemas import GenreSchema, GenreCreateSchema, MovieSchema, MovieCreateSch
 from django.shortcuts import get_object_or_404
 from ninja.errors import HttpError
 from ninja_jwt.tokens import RefreshToken
+from ninja_jwt.authentication import JWTAuth
 
 api = NinjaAPI()
 
 
-# User Registration
+# User Registration (No authentication required)
 @api.post("/register/", response=UserSchema)
 def register(request, payload: UserSchema):
     if User.objects.filter(username=payload.username).exists():
@@ -24,7 +25,7 @@ def register(request, payload: UserSchema):
     return user
 
 
-# User Login
+# User Login (No authentication required)
 @api.post("/login/")
 def login(request, payload: LoginSchema):
     user = get_object_or_404(User, username=payload.username)
@@ -38,19 +39,19 @@ def login(request, payload: LoginSchema):
     }
 
 
-# Genre CRUD operations
-@api.get("/genres/", response=list[GenreSchema])
+# Genre CRUD operations (Authentication required)
+@api.get("/genres/", response=list[GenreSchema], auth=JWTAuth())
 def list_genres(request):
     return Genre.objects.all()
 
 
-@api.post("/genres/", response=GenreSchema)
+@api.post("/genres/", response=GenreSchema, auth=JWTAuth())
 def create_genre(request, payload: GenreCreateSchema):
     genre = Genre.objects.create(**payload.dict())
     return genre
 
 
-@api.put("/genres/{genre_id}/", response=GenreSchema)
+@api.put("/genres/{genre_id}/", response=GenreSchema, auth=JWTAuth())
 def update_genre(request, genre_id: int, payload: GenreCreateSchema):
     genre = get_object_or_404(Genre, id=genre_id)
     if not genre:
@@ -61,7 +62,7 @@ def update_genre(request, genre_id: int, payload: GenreCreateSchema):
     return genre
 
 
-@api.delete("/genres/{genre_id}/")
+@api.delete("/genres/{genre_id}/", auth=JWTAuth())
 def delete_genre(request, genre_id: int):
     genre = get_object_or_404(Genre, id=genre_id)
     if not genre:
@@ -71,13 +72,13 @@ def delete_genre(request, genre_id: int):
     return {"success": True}
 
 
-# Movie CRUD operations
-@api.get("/movies/", response=list[MovieSchema])
+# Movie CRUD operations (Authentication required)
+@api.get("/movies/", response=list[MovieSchema], auth=JWTAuth())
 def list_movies(request):
     return Movie.objects.all()
 
 
-@api.get("/movies/{movie_id}/", response=MovieSchema)
+@api.get("/movies/{movie_id}/", response=MovieSchema, auth=JWTAuth())
 def get_movie(request, movie_id: int):
     movie = get_object_or_404(Movie, id=movie_id)
     if not movie:
@@ -86,7 +87,7 @@ def get_movie(request, movie_id: int):
     return movie
 
 
-@api.post("/movies/", response=MovieSchema)
+@api.post("/movies/", response=MovieSchema, auth=JWTAuth())
 def create_movie(request, payload: MovieCreateSchema):
     genre = get_object_or_404(Genre, id=payload.genre_id)
     if not genre:
@@ -102,7 +103,7 @@ def create_movie(request, payload: MovieCreateSchema):
     return movie
 
 
-@api.put("/movies/{movie_id}/", response=MovieSchema)
+@api.put("/movies/{movie_id}/", response=MovieSchema, auth=JWTAuth())
 def update_movie(request, movie_id: int, payload: MovieUpdateSchema):
     movie = get_object_or_404(Movie, id=movie_id)
     if not movie:
@@ -126,7 +127,7 @@ def update_movie(request, movie_id: int, payload: MovieUpdateSchema):
     return movie
 
 
-@api.delete("/movies/{movie_id}/")
+@api.delete("/movies/{movie_id}/", auth=JWTAuth())
 def delete_movie(request, movie_id: int):
     movie = get_object_or_404(Movie, id=movie_id)
     if not movie:
@@ -134,4 +135,3 @@ def delete_movie(request, movie_id: int):
 
     movie.delete()
     return {"success": True}
-
