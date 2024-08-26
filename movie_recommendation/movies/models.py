@@ -27,3 +27,14 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+
+class Watchlist(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="watchlist")
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.user.username}'s Watchlist - {self.movie.title}"
+
+    class Meta:
+        unique_together = ("user", "movie")  # Prevents duplicate entries for the same movie in a user's watchlist

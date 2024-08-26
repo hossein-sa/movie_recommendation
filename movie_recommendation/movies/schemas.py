@@ -47,3 +47,8 @@ class UserSchema(Schema):
 class LoginSchema(Schema):
     username: str
     password: str
+
+
+class WatchlistSchema(Schema):
+    id: int
+    movie: MovieSchema

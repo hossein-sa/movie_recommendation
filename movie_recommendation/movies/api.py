@@ -1,9 +1,9 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from ninja import NinjaAPI
-from .models import Genre, Movie
+from .models import Genre, Movie, Watchlist
 from .schemas import GenreSchema, GenreCreateSchema, MovieSchema, MovieCreateSchema, MovieUpdateSchema, UserSchema, \
-    LoginSchema
+    LoginSchema, WatchlistSchema
 from django.shortcuts import get_object_or_404
 from ninja.errors import HttpError
 from ninja_jwt.tokens import RefreshToken
@@ -160,4 +160,32 @@ def delete_movie(request, movie_id: int):
         raise HttpError(404, "Movie not found")
 
     movie.delete()
+    return {"success": True}
+
+
+# Get the current user's watchlist
+@api.get("/watchlist/", response=list[WatchlistSchema], auth=JWTAuth())
+def get_watchlist(request):
+    watchlist = Watchlist.objects.filter(user=request.user)
+    return watchlist
+
+
+# Add a movie to the watchlist
+@api.post("/watchlist/", response=WatchlistSchema, auth=JWTAuth())
+def add_to_watchlist(request, movie_id: int):
+    movie = get_object_or_404(Movie, id=movie_id)
+    watchlist_item, created = Watchlist.objects.get_or_create(user=request.user, movie=movie)
+
+    if not created:
+        raise HttpError(400, "Movie is already in the watchlist")
+
+    return watchlist_item
+
+
+# Remove a movie from the watchlist
+@api.delete("/watchlist/{movie_id}/", auth=JWTAuth())
+def remove_from_watchlist(request, movie_id: int):
+    movie = get_object_or_404(Movie, id=movie_id)
+    watchlist_item = get_object_or_404(Watchlist, user=request.user, movie=movie)
+    watchlist_item.delete()
     return {"success": True}
