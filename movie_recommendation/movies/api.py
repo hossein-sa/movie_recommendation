@@ -22,6 +22,9 @@ def create_genre(request, payload: GenreCreateSchema):
 @api.put("/genres/{genre_id}/", response=GenreSchema)
 def update_genre(request, genre_id: int, payload: GenreCreateSchema):
     genre = get_object_or_404(Genre, id=genre_id)
+    if not genre:
+        raise HttpError(404, "Genre not found")
+
     genre.name = payload.name
     genre.save()
     return genre
@@ -30,6 +33,9 @@ def update_genre(request, genre_id: int, payload: GenreCreateSchema):
 @api.delete("/genres/{genre_id}/")
 def delete_genre(request, genre_id: int):
     genre = get_object_or_404(Genre, id=genre_id)
+    if not genre:
+        raise HttpError(404, "Genre not found")
+
     genre.delete()
     return {"success": True}
 
@@ -43,12 +49,18 @@ def list_movies(request):
 @api.get("/movies/{movie_id}/", response=MovieSchema)
 def get_movie(request, movie_id: int):
     movie = get_object_or_404(Movie, id=movie_id)
+    if not movie:
+        raise HttpError(404, "Movie not found")
+
     return movie
 
 
 @api.post("/movies/", response=MovieSchema)
 def create_movie(request, payload: MovieCreateSchema):
     genre = get_object_or_404(Genre, id=payload.genre_id)
+    if not genre:
+        raise HttpError(404, "Genre not found")
+
     movie = Movie.objects.create(
         title=payload.title,
         description=payload.description,
@@ -62,13 +74,18 @@ def create_movie(request, payload: MovieCreateSchema):
 @api.put("/movies/{movie_id}/", response=MovieSchema)
 def update_movie(request, movie_id: int, payload: MovieUpdateSchema):
     movie = get_object_or_404(Movie, id=movie_id)
+    if not movie:
+        raise HttpError(404, "Movie not found")
 
     if payload.title:
         movie.title = payload.title
     if payload.description:
         movie.description = payload.description
     if payload.genre_id:
-        movie.genre = get_object_or_404(Genre, id=payload.genre_id)
+        genre = get_object_or_404(Genre, id=payload.genre_id)
+        if not genre:
+            raise HttpError(404, "Genre not found")
+        movie.genre = genre
     if payload.release_date:
         movie.release_date = payload.release_date
     if payload.rating:
@@ -81,5 +98,8 @@ def update_movie(request, movie_id: int, payload: MovieUpdateSchema):
 @api.delete("/movies/{movie_id}/")
 def delete_movie(request, movie_id: int):
     movie = get_object_or_404(Movie, id=movie_id)
+    if not movie:
+        raise HttpError(404, "Movie not found")
+
     movie.delete()
     return {"success": True}
