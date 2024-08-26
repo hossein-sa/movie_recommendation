@@ -36,3 +36,14 @@ class MovieUpdateSchema(Schema):
     genre_id: Optional[int] = None
     release_date: Optional[date] = None
     rating: Optional[float] = None
+
+
+class UserSchema(Schema):
+    username: str
+    password: str
+    email: Optional[str] = None
+
+
+class LoginSchema(Schema):
+    username: str
+    password: str

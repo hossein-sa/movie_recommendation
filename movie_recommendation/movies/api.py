@@ -1,10 +1,41 @@
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import User
 from ninja import NinjaAPI
 from .models import Genre, Movie
-from .schemas import GenreSchema, GenreCreateSchema, MovieSchema, MovieCreateSchema, MovieUpdateSchema
+from .schemas import GenreSchema, GenreCreateSchema, MovieSchema, MovieCreateSchema, MovieUpdateSchema, UserSchema, \
+    LoginSchema
 from django.shortcuts import get_object_or_404
 from ninja.errors import HttpError
+from ninja_jwt.tokens import RefreshToken
 
 api = NinjaAPI()
+
+
+# User Registration
+@api.post("/register/", response=UserSchema)
+def register(request, payload: UserSchema):
+    if User.objects.filter(username=payload.username).exists():
+        raise HttpError(400, "Username already exists")
+    user = User.objects.create(
+        username=payload.username,
+        password=make_password(payload.password),  # Hash the password
+        email=payload.email
+    )
+    return user
+
+
+# User Login
+@api.post("/login/")
+def login(request, payload: LoginSchema):
+    user = get_object_or_404(User, username=payload.username)
+    if not user.check_password(payload.password):
+        raise HttpError(400, "Invalid username or password")
+
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
 
 
 # Genre CRUD operations
@@ -103,3 +134,4 @@ def delete_movie(request, movie_id: int):
 
     movie.delete()
     return {"success": True}
+
