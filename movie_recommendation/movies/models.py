@@ -38,3 +38,19 @@ class Watchlist(models.Model):
 
     class Meta:
         unique_together = ("user", "movie")  # Prevents duplicate entries for the same movie in a user's watchlist
+
+
+class Review(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name="reviews")  # Add related_name="reviews"
+    rating = models.DecimalField(max_digits=2, decimal_places=1)  # Rating out of 10, e.g., 8.5
+    comment = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "movie")  # Ensures one review per user per movie
+
+    def __str__(self):
+        return f"{self.user.username} - {self.movie.title} ({self.rating})"
+
+

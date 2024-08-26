@@ -1,9 +1,9 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from ninja import NinjaAPI
-from .models import Genre, Movie, Watchlist
+from .models import Genre, Movie, Watchlist, Review
 from .schemas import GenreSchema, GenreCreateSchema, MovieSchema, MovieCreateSchema, MovieUpdateSchema, UserSchema, \
-    LoginSchema, WatchlistSchema
+    LoginSchema, WatchlistSchema, ReviewSchema, ReviewCreateSchema
 from django.shortcuts import get_object_or_404
 from ninja.errors import HttpError
 from ninja_jwt.tokens import RefreshToken
@@ -120,7 +120,6 @@ def list_movies(request, title: str = None, genre_id: int = None, min_rating: fl
     return movies
 
 
-
 @api.get("/movies/{movie_id}/", response=MovieSchema, auth=JWTAuth())
 def get_movie(request, movie_id: int):
     movie = get_object_or_404(Movie, id=movie_id)
@@ -224,3 +223,44 @@ def get_recommendations(request):
     ).distinct()[:10]  # Limit to 10 recommendations
 
     return recommended_movies
+
+
+# Get all reviews for a specific movie
+@api.get("/movies/{movie_id}/reviews/", response=list[ReviewSchema], auth=JWTAuth())
+def get_movie_reviews(request, movie_id: int):
+    reviews = Review.objects.filter(movie_id=movie_id)
+    return reviews
+
+
+# Add a review to a movie
+@api.post("/movies/{movie_id}/reviews/", response=ReviewSchema, auth=JWTAuth())
+def add_movie_review(request, movie_id: int, payload: ReviewCreateSchema):
+    movie = get_object_or_404(Movie, id=movie_id)
+    review, created = Review.objects.get_or_create(
+        user=request.user,
+        movie=movie,
+        defaults={'rating': payload.rating, 'comment': payload.comment}
+    )
+
+    if not created:
+        raise HttpError(400, "You have already reviewed this movie")
+
+    return review
+
+
+# Update an existing review
+@api.put("/reviews/{review_id}/", response=ReviewSchema, auth=JWTAuth())
+def update_movie_review(request, review_id: int, payload: ReviewCreateSchema):
+    review = get_object_or_404(Review, id=review_id, user=request.user)
+    review.rating = payload.rating
+    review.comment = payload.comment
+    review.save()
+    return review
+
+
+# Delete a review
+@api.delete("/reviews/{review_id}/", auth=JWTAuth())
+def delete_movie_review(request, review_id: int):
+    review = get_object_or_404(Review, id=review_id, user=request.user)
+    review.delete()
+    return {"success": True}
